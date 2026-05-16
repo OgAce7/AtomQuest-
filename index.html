@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AtomQuest – Goal Portal</title>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap');
+
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --c-bg:#0d0f14;--c-surface:#13151c;--c-surface2:#1a1d27;--c-border:#2a2d3e;
+    --c-accent:#6c63ff;--c-accent2:#ff6584;--c-text:#e8eaf0;--c-muted:#7a7f9a;
+    --c-success:#22d3a5;--c-warn:#f59e0b;--c-danger:#f43f5e;
+    --c-thrust-revenue:#6c63ff;--c-thrust-cost:#22d3a5;--c-thrust-quality:#f59e0b;
+    --c-thrust-people:#ff6584;--c-thrust-customer:#38bdf8;--c-thrust-innovation:#a78bfa;
+    --c-thrust-compliance:#fb923c;--c-thrust-other:#94a3b8;
+  }
+  html,body,#root{height:100%;font-family:'DM Sans',sans-serif;background:var(--c-bg);color:var(--c-text)}
+  button{font-family:inherit;cursor:pointer}
+  input,select,textarea{font-family:inherit}
+  ::-webkit-scrollbar{width:4px}
+  ::-webkit-scrollbar-track{background:var(--c-bg)}
+  ::-webkit-scrollbar-thumb{background:var(--c-border);border-radius:4px}
+
+  .mono{font-family:'Space Mono',monospace}
+
+  /* Layout */
+  .layout{display:flex;height:100vh;overflow:hidden}
+  .sidebar{width:220px;background:var(--c-surface);border-right:1px solid var(--c-border);display:flex;flex-direction:column;flex-shrink:0}
+  .sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid var(--c-border)}
+  .sidebar-logo .brand{font-size:18px;font-weight:600;letter-spacing:-0.5px}
+  .sidebar-logo .sub{font-size:11px;color:var(--c-muted);margin-top:2px;font-family:'Space Mono',monospace}
+  .nav{padding:16px 12px;flex:1;overflow-y:auto}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;font-size:13px;color:var(--c-muted);cursor:pointer;transition:all .15s;border:none;background:transparent;width:100%;text-align:left}
+  .nav-item:hover{background:var(--c-surface2);color:var(--c-text)}
+  .nav-item.active{background:rgba(108,99,255,0.15);color:var(--c-accent)}
+  .nav-item svg{width:16px;height:16px;flex-shrink:0}
+  .nav-section{font-size:10px;color:var(--c-muted);letter-spacing:1px;text-transform:uppercase;padding:16px 12px 6px;font-family:'Space Mono',monospace}
+
+  .main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+  .topbar{padding:20px 32px;border-bottom:1px solid var(--c-border);display:flex;align-items:center;justify-content:space-between;background:var(--c-surface);flex-shrink:0}
+  .topbar h1{font-size:20px;font-weight:500;letter-spacing:-0.3px}
+  .topbar .meta{font-size:12px;color:var(--c-muted);font-family:'Space Mono',monospace}
+  .content{padding:32px;flex:1}
+
+  /* Weightage ring */
+  .ring-wrap{display:flex;align-items:center;gap:24px;padding:20px 24px;background:var(--c-surface2);border:1px solid var(--c-border);border-radius:12px;margin-bottom:28px}
+  .ring-svg{flex-shrink:0}
+  .ring-stats{display:flex;flex-direction:column;gap:6px}
+  .ring-val{font-size:32px;font-weight:600;font-family:'Space Mono',monospace}
+  .ring-label{font-size:12px;color:var(--c-muted)}
+  .ring-pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .pill{font-size:11px;padding:3px 10px;border-radius:20px;font-family:'Space Mono',monospace;border:1px solid}
+
+  /* Goals list */
+  .goals-grid{display:flex;flex-direction:column;gap:12px;margin-bottom:24px}
+  .goal-card{background:var(--c-surface);border:1px solid var(--c-border);border-radius:10px;padding:16px 20px;display:grid;grid-template-columns:1fr auto;gap:12px;transition:border-color .15s;position:relative;overflow:hidden}
+  .goal-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+  .goal-card:hover{border-color:var(--c-accent)}
+  .goal-title{font-size:14px;font-weight:500;margin-bottom:4px}
+  .goal-meta{font-size:12px;color:var(--c-muted);display:flex;gap:12px;flex-wrap:wrap}
+  .goal-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+  .w-badge{font-size:18px;font-weight:700;font-family:'Space Mono',monospace;color:var(--c-accent)}
+  .w-pct{font-size:11px;color:var(--c-muted)}
+  .tag{font-size:10px;padding:2px 8px;border-radius:4px;font-family:'Space Mono',monospace;background:var(--c-surface2);color:var(--c-muted);border:1px solid var(--c-border)}
+  .tag.status-draft{color:#94a3b8;border-color:#94a3b830}
+  .tag.status-submitted{color:var(--c-warn);background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.3)}
+  .tag.status-approved{color:var(--c-success);background:rgba(34,211,165,.1);border-color:rgba(34,211,165,.3)}
+  .tag.status-rejected,.tag.status-revision{color:var(--c-danger);background:rgba(244,63,94,.1);border-color:rgba(244,63,94,.3)}
+  .tag.locked{color:var(--c-warn)}
+
+  /* Form */
+  .form-panel{background:var(--c-surface);border:1px solid var(--c-border);border-radius:12px;padding:28px}
+  .form-panel h2{font-size:16px;font-weight:500;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid var(--c-border)}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  .form-group{display:flex;flex-direction:column;gap:6px}
+  .form-group.full{grid-column:1/-1}
+  .form-label{font-size:11px;color:var(--c-muted);letter-spacing:.5px;text-transform:uppercase;font-family:'Space Mono',monospace}
+  .form-input{background:var(--c-surface2);border:1px solid var(--c-border);border-radius:8px;padding:10px 14px;font-size:13px;color:var(--c-text);outline:none;transition:border-color .15s;width:100%}
+  .form-input:focus{border-color:var(--c-accent)}
+  .form-input option{background:var(--c-surface)}
+  .err{color:var(--c-danger);font-size:11px;margin-top:3px}
+
+  /* Buttons */
+  .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:500;border:none;transition:all .15s;cursor:pointer}
+  .btn-primary{background:var(--c-accent);color:#fff}
+  .btn-primary:hover{background:#7c74ff}
+  .btn-primary:disabled{opacity:.4;cursor:not-allowed}
+  .btn-ghost{background:transparent;color:var(--c-muted);border:1px solid var(--c-border)}
+  .btn-ghost:hover{color:var(--c-text);border-color:var(--c-text)}
+  .btn-danger{background:rgba(244,63,94,.1);color:var(--c-danger);border:1px solid rgba(244,63,94,.3)}
+  .btn-danger:hover{background:rgba(244,63,94,.2)}
+  .btn-success{background:rgba(34,211,165,.1);color:var(--c-success);border:1px solid rgba(34,211,165,.3)}
+  .btn-success:hover{background:rgba(34,211,165,.2)}
+  .btn-warn{background:rgba(245,158,11,.1);color:var(--c-warn);border:1px solid rgba(245,158,11,.3)}
+  .btn-warn:hover{background:rgba(245,158,11,.2)}
+
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+
+  /* Alert */
+  .alert{padding:10px 14px;border-radius:8px;font-size:12px;margin-bottom:16px}
+  .alert-err{background:rgba(244,63,94,.1);border:1px solid rgba(244,63,94,.3);color:var(--c-danger)}
+  .alert-ok{background:rgba(34,211,165,.1);border:1px solid rgba(34,211,165,.3);color:var(--c-success)}
+  .alert-warn{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);color:var(--c-warn)}
+
+  /* Manager table */
+  .employee-block{background:var(--c-surface);border:1px solid var(--c-border);border-radius:12px;margin-bottom:20px;overflow:hidden}
+  .emp-header{padding:16px 20px;border-bottom:1px solid var(--c-border);display:flex;align-items:center;justify-content:space-between;background:var(--c-surface2)}
+  .emp-name{font-size:14px;font-weight:500}
+  .emp-dept{font-size:11px;color:var(--c-muted);font-family:'Space Mono',monospace}
+  .emp-actions{display:flex;gap:8px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{padding:10px 16px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--c-muted);font-family:'Space Mono',monospace;font-weight:400;border-bottom:1px solid var(--c-border)}
+  td{padding:11px 16px;border-bottom:1px solid var(--c-border);vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:rgba(255,255,255,.01)}
+  .editable-input{background:var(--c-surface2);border:1px solid var(--c-accent);border-radius:6px;padding:5px 9px;font-size:12px;color:var(--c-text);width:80px;outline:none;font-family:'Space Mono',monospace}
+
+  /* Push modal */
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:50}
+  .modal{background:var(--c-surface);border:1px solid var(--c-border);border-radius:14px;padding:28px;width:480px;max-height:80vh;overflow-y:auto}
+  .modal h3{font-size:16px;font-weight:500;margin-bottom:20px}
+  .user-checkbox{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--c-border);font-size:13px}
+  .user-checkbox:last-child{border-bottom:none}
+  .user-checkbox input[type=checkbox]{accent-color:var(--c-accent);width:15px;height:15px}
+
+  /* Empty state */
+  .empty{text-align:center;padding:60px 20px;color:var(--c-muted)}
+  .empty .big{font-size:40px;margin-bottom:12px}
+  .empty p{font-size:13px;line-height:1.6}
+
+  .divider{border:none;border-top:1px solid var(--c-border);margin:24px 0}
+  .flex-row{display:flex;align-items:center;gap:12px}
+  .flex-between{display:flex;align-items:center;justify-content:space-between}
+  .chip{display:inline-block;padding:1px 8px;border-radius:4px;font-size:10px;font-family:'Space Mono',monospace}
+  .chip-thrust{background:rgba(108,99,255,.15);color:var(--c-accent);border:1px solid rgba(108,99,255,.3)}
+  .chip-uom{background:var(--c-surface2);color:var(--c-muted);border:1px solid var(--c-border)}
+  .loading{text-align:center;padding:40px;color:var(--c-muted);font-size:13px}
+
+  /* ── Part 3: Check-in styles ──────────────────────────── */
+  .checkin-card{background:var(--c-surface);border:1px solid var(--c-border);border-radius:12px;padding:20px 24px;margin-bottom:12px}
+  .checkin-card .goal-title{margin-bottom:8px}
+  .progress-bar-wrap{height:8px;background:var(--c-surface2);border-radius:4px;overflow:hidden;margin:10px 0}
+  .progress-bar{height:100%;border-radius:4px;transition:width .5s ease}
+  .score-badge{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-family:'Space Mono',monospace;padding:3px 10px;border-radius:20px;border:1px solid}
+  .score-on-track{color:var(--c-success);background:rgba(34,211,165,.1);border-color:rgba(34,211,165,.3)}
+  .score-at-risk{color:var(--c-warn);background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.3)}
+  .score-off-track{color:var(--c-danger);background:rgba(244,63,94,.1);border-color:rgba(244,63,94,.3)}
+  .score-not-started{color:var(--c-muted);background:var(--c-surface2);border-color:var(--c-border)}
+  .checkin-history{margin-top:14px;border-top:1px solid var(--c-border);padding-top:12px}
+  .checkin-history-item{display:flex;justify-content:space-between;font-size:11px;padding:5px 0;border-bottom:1px solid var(--c-border);color:var(--c-muted)}
+  .checkin-history-item:last-child{border-bottom:none}
+  .quarter-tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap}
+  .q-tab{padding:5px 14px;border-radius:20px;font-size:11px;font-family:'Space Mono',monospace;border:1px solid var(--c-border);background:transparent;color:var(--c-muted);cursor:pointer;transition:all .15s}
+  .q-tab.active{background:rgba(108,99,255,.15);color:var(--c-accent);border-color:rgba(108,99,255,.4)}
+
+  /* ── Part 4: Admin styles ─────────────────────────────── */
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px;margin-bottom:32px}
+  .stat-box{background:var(--c-surface);border:1px solid var(--c-border);border-radius:10px;padding:18px 20px}
+  .stat-val{font-size:30px;font-weight:700;font-family:'Space Mono',monospace;color:var(--c-accent);margin-bottom:4px}
+  .stat-label{font-size:11px;color:var(--c-muted);text-transform:uppercase;letter-spacing:.5px}
+  .mgr-row{background:var(--c-surface);border:1px solid var(--c-border);border-radius:10px;padding:16px 20px;margin-bottom:12px}
+  .mgr-row-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .mgr-name{font-size:14px;font-weight:500}
+  .completion-bar-wrap{height:6px;background:var(--c-surface2);border-radius:3px;overflow:hidden;flex:1;margin:0 16px}
+  .completion-bar{height:100%;border-radius:3px;background:var(--c-accent);transition:width .5s ease}
+  .audit-table{width:100%;font-size:12px;border-collapse:collapse}
+  .audit-table th{padding:8px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--c-muted);font-family:'Space Mono',monospace;border-bottom:1px solid var(--c-border)}
+  .audit-table td{padding:9px 12px;border-bottom:1px solid var(--c-border);vertical-align:middle}
+  .audit-table tr:last-child td{border-bottom:none}
+  .thrust-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+  .export-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:8px;font-size:12px;font-weight:500;background:rgba(34,211,165,.1);color:var(--c-success);border:1px solid rgba(34,211,165,.3);cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif}
+  .export-btn:hover{background:rgba(34,211,165,.2)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+
+// ── Constants ──────────────────────────────────────────────
+const API = 'https://atomquest-mbff.onrender.com';
+
+const THRUST_AREAS = ['Revenue','Cost','Quality','People','Customer','Innovation','Compliance','Other'];
+const UOM_OPTIONS  = ['Numeric','Percentage','Timeline','Zero-based'];
+const STATUS_COLORS = { draft:'status-draft', submitted:'status-submitted', approved:'status-approved', rejected:'status-rejected', revision:'status-revision' };
+
+// ─────────────────────────────────────────────────────────────
+// DEMO USER ROSTER  (hardcoded for sidebar switcher)
+// These _id values must match real MongoDB ObjectIds once seeded.
+// On first run against a fresh DB, use the seed script (see README).
+// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// DEMO USER ROSTER (Updated to match database ObjectIds)
+// ─────────────────────────────────────────────────────────────
+const DEMO_USERS = [
+  { _id:'64a1b2c3d4e5f6a7b8c9d001', name:'Priya Sharma',  email:'priya@co.in',  role:'employee', managerId:'64a1b2c3d4e5f6a7b8c9d004', department:'Engineering' },
+  { _id:'64a1b2c3d4e5f6a7b8c9d002', name:'Arjun Mehta',   email:'arjun@co.in',  role:'employee', managerId:'64a1b2c3d4e5f6a7b8c9d004', department:'Engineering' },
+  { _id:'64a1b2c3d4e5f6a7b8c9d003', name:'Sneha Iyer',    email:'sneha@co.in',  role:'employee', managerId:'64a1b2c3d4e5f6a7b8c9d004', department:'Product' },
+  { _id:'64a1b2c3d4e5f6a7b8c9d004', name:'Kavita Nair',   email:'kavita@co.in', role:'manager',  managerId:null, department:'Engineering' },
+  { _id:'64a1b2c3d4e5f6a7b8c9d005', name:'Rahul Joshi',   email:'rahul@co.in',  role:'admin',    managerId:null, department:'HR' },
+];
+
+// ─────────────────────────────────────────────────────────────
+// REAL API LAYER
+// Every function below is a thin async wrapper over fetch().
+// Error shape is always: throw { error: string }
+// ─────────────────────────────────────────────────────────────
+
+async function apiFetch(path, opts = {}) {
+  const res = await fetch(`${API}${path}`, {
+    headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
+    ...opts,
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  // CSV export returns non-JSON – caller handles that separately
+  if (opts._raw) return res;
+  const data = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+  if (!res.ok) throw data; // propagates { error: '...' } to catch blocks in UI
+  return data;
+}
+
+// ── Goals API ─────────────────────────────────────────────
+// GET /api/goals?ownerId=X  → { goals, totalWeightage }
+const goalsApi = {
+  getGoals: (ownerId) =>
+    apiFetch(`/goals?ownerId=${ownerId}`),
+
+  // POST /api/goals  → Goal doc
+  createGoal: (data) =>
+    apiFetch('/goals', { method: 'POST', body: data }),
+
+  // PATCH /api/goals/:id  → Goal doc (employee edit, draft only)
+  updateGoal: (id, data) =>
+    apiFetch(`/goals/${id}`, { method: 'PATCH', body: data }),
+
+  // DELETE /api/goals/:id  → { message }
+  deleteGoal: (id) =>
+    apiFetch(`/goals/${id}`, { method: 'DELETE' }),
+
+  // POST /api/goals/submit/:ownerId  → { message, count }
+  submitGoals: (ownerId) =>
+    apiFetch(`/goals/submit/${ownerId}`, { method: 'POST' }),
+
+  // ── Manager ────────────────────────────────────────────
+  // GET /api/goals/manager/:managerId/pending  → [{ employee, goals, totalWeightage }]
+  getManagerPending: (managerId) =>
+    apiFetch(`/goals/manager/${managerId}/pending`),
+
+  // PATCH /api/goals/manager/edit/:goalId  → Goal doc
+  managerEditGoal: (goalId, data) =>
+    apiFetch(`/goals/manager/edit/${goalId}`, { method: 'PATCH', body: data }),
+
+  // POST /api/goals/manager/approve/:ownerId  → { message }
+  approveGoals: (ownerId, managerId) =>
+    apiFetch(`/goals/manager/approve/${ownerId}`, { method: 'POST', body: { managerId } }),
+
+  // POST /api/goals/manager/reject/:ownerId  → { message }
+  rejectGoals: (ownerId, comment) =>
+    apiFetch(`/goals/manager/reject/${ownerId}`, { method: 'POST', body: { comment } }),
+
+  // POST /api/goals/push  → { message, success, failed }
+  pushKpi: (pushedBy, targetUserIds, kpi) =>
+    apiFetch('/goals/push', { method: 'POST', body: { pushedBy, targetUserIds, kpi } }),
+};
+
+// ── Check-ins API ─────────────────────────────────────────
+// POST /api/checkins/:goalId  → { goal, progress }
+// Body: { achieved, note, userId, userRole, quarter? }
+const checkinApi = {
+  logCheckin: (goalId, achieved, note, userId, userRole) =>
+    apiFetch(`/checkins/${goalId}`, {
+      method: 'POST',
+      body: { achieved, note: note || '', userId, userRole: userRole || 'employee', quarter: currentQuarter() },
+    }),
+
+  // PATCH /api/checkins/:goalId/comment  → { goal }
+  // Body: { comment, managerId, quarter? }
+  addComment: (goalId, comment, managerId) =>
+    apiFetch(`/checkins/${goalId}/comment`, {
+      method: 'PATCH',
+      body: { comment, managerId, quarter: currentQuarter() },
+    }),
+
+  // GET /api/checkins/progress/:ownerId  → { goals: [{goal, progress}], overallPercent }
+  getProgress: (ownerId) =>
+    apiFetch(`/checkins/progress/${ownerId}`),
+};
+
+// ── Admin API ─────────────────────────────────────────────
+const adminApi = {
+  // GET /api/admin/overview  → { totalEmployees, totalGoals, approvedGoals, pendingApproval, checkInsComplete, checkInRate, thrustBreakdown }
+  getOverview: () =>
+    apiFetch('/admin/overview'),
+
+  // GET /api/admin/completion  → [{ manager, subordinateCount, totalApprovedGoals, goalsCheckedIn, completionRate, employeeBreakdown }]
+  getCompletion: () =>
+    apiFetch('/admin/completion'),
+
+  // GET /api/admin/audit/:goalId  → [AuditLog]
+  getAudit: (goalId) =>
+    apiFetch(`/admin/audit/${goalId}`),
+
+  // GET /api/admin/export/csv  → streams CSV file
+  // Handled by navigating the browser to the endpoint (triggers download)
+  exportCsv: (quarter) => {
+    const qs = quarter ? `?quarter=${encodeURIComponent(quarter)}` : '';
+    // Open in same tab to trigger browser's file download
+    window.open(`${API}/admin/export/csv${qs}`, '_blank');
+  },
+};
+
+// ─────────────────────────────────────────────────────────────
+// LOCAL PROGRESS ENGINE  (mirrors backend utils/progressEngine.js)
+// Used only for optimistic UI updates on checkin cards; the server's
+// computed value is always authoritative and gets stored on save.
+// ─────────────────────────────────────────────────────────────
+// ── Progress Engine ───────────────────────────────────────
+function calcProgressScore(target, achieved, uom, direction='min') {
+  if(achieved===null||achieved===undefined||target===null) return {score:0,percent:0,label:'Not Started'};
+  
+  const safeAchieved = Math.max(0, achieved);
+  let score=0;
+  
+  if(uom==='Zero-based') {
+    score = safeAchieved===0 ? 1 : 0;
+  } else if(direction==='max') {
+    score = safeAchieved===0 ? 1 : target/safeAchieved;
+  } else {
+    score = target===0 ? (safeAchieved===0?1:0) : safeAchieved/target;
+  }
+  
+  score = Math.max(0, Math.min(score, 1)); // Cap between 0 and 100%
+  const percent = Math.round(score*100);
+  const label = percent===100?'Target Met ✓':percent>=75?'On Track':percent>=50?'At Risk':percent>0?'Off Track':'Not Started';
+  return {score:parseFloat(score.toFixed(4)),percent,label};
+}
+
+function currentQuarter() {
+  const d = new Date(); 
+  return `Q${Math.ceil((d.getMonth()+1)/3)}-${d.getFullYear()}`;
+}
+
+// ─────────────────────────────────────────────────────────────
+// UI COMPONENTS  (layout / styles unchanged from v2)
+// ─────────────────────────────────────────────────────────────
+
+// ── WeightageRing ─────────────────────────────────────────
+function WeightageRing({ total, count, max = 8 }) {
+  const pct = Math.min(total, 100);
+  const r = 40, cx = 50, cy = 50;
+  const circ = 2 * Math.PI * r;
+  const dash = (pct / 100) * circ;
+  const color = total > 100 ? '#f43f5e' : total === 100 ? '#22d3a5' : '#6c63ff';
+  return (
+    <div className="ring-wrap">
+      <svg className="ring-svg" width="100" height="100" viewBox="0 0 100 100">
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#2a2d3e" strokeWidth="8"/>
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth="8"
+          strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
+          transform="rotate(-90 50 50)" style={{transition:'stroke-dasharray .4s ease'}}/>
+        <text x="50" y="47" textAnchor="middle" fontSize="16" fontWeight="700" fill={color} fontFamily="'Space Mono',monospace">{total}%</text>
+        <text x="50" y="61" textAnchor="middle" fontSize="9" fill="#7a7f9a" fontFamily="'Space Mono',monospace">weightage</text>
+      </svg>
+      <div className="ring-stats">
+        <div className="ring-label">Goal Sheet Summary</div>
+        <div className="ring-pills">
+          <span className="pill mono" style={{color:count>=max?'var(--c-danger)':'var(--c-success)',borderColor:count>=max?'rgba(244,63,94,.3)':'rgba(34,211,165,.3)',background:count>=max?'rgba(244,63,94,.08)':'rgba(34,211,165,.08)'}}>
+            {count}/{max} goals
+          </span>
+          <span className="pill mono" style={{color:total===100?'var(--c-success)':'var(--c-warn)',borderColor:total===100?'rgba(34,211,165,.3)':'rgba(245,158,11,.3)',background:total===100?'rgba(34,211,165,.08)':'rgba(245,158,11,.08)'}}>
+            {100 - total}% remaining
+          </span>
+        </div>
+        {total === 100 && <div style={{fontSize:11,color:'var(--c-success)',marginTop:4}}>✓ Ready to submit</div>}
+        {total > 100  && <div style={{fontSize:11,color:'var(--c-danger)',marginTop:4}}>⚠ Exceeds 100%</div>}
+      </div>
+    </div>
+  );
+}
+
+// ── GoalCard ──────────────────────────────────────────────
+function GoalCard({ goal, onDelete, onEdit, canEdit }) {
+  const [editing, setEditing] = useState(false);
+  const [edits, setEdits] = useState({ target: goal.target, weightage: goal.weightage });
+
+  const thrustColor = {Revenue:'#6c63ff',Cost:'#22d3a5',Quality:'#f59e0b',People:'#ff6584',Customer:'#38bdf8',Innovation:'#a78bfa',Compliance:'#fb923c',Other:'#94a3b8'}[goal.thrustArea] || '#6c63ff';
+
+  const handleSave = () => {
+    onEdit(goal._id, edits);
+    setEditing(false);
+  };
+
+  const isEditable = goal.status === 'draft' || goal.status === 'revision';
+
+  return (
+    <div className="goal-card" style={{'--thrust-color':thrustColor}}>
+      <div style={{position:'absolute',left:0,top:0,bottom:0,width:3,background:thrustColor,borderRadius:'10px 0 0 10px'}}/>
+      <div style={{paddingLeft:8}}>
+        <div className="goal-title">{goal.title}</div>
+        <div className="goal-meta">
+          <span className="chip chip-thrust">{goal.thrustArea}</span>
+          <span className="chip chip-uom">{goal.uom}</span>
+          <span style={{color:'var(--c-muted)'}}>
+            Target: {editing ? <input className="editable-input" style={{width:60}} type="number" value={edits.target} onChange={e=>setEdits({...edits, target: Number(e.target.value)})} /> : <strong style={{color:'var(--c-text)'}}>{goal.target}{goal.uom==='Percentage'?'%':''}</strong>}
+          </span>
+          {goal.isPushed && <span className="chip" style={{background:'rgba(167,139,250,.1)',color:'#a78bfa',border:'1px solid rgba(167,139,250,.3)'}}>pushed</span>}
+        </div>
+        {goal.description && <div style={{fontSize:12,color:'var(--c-muted)',marginTop:6,lineHeight:1.5}}>{goal.description}</div>}
+        {goal.managerComment && <div style={{fontSize:11,color:'var(--c-warn)',marginTop:6,padding:'4px 8px',background:'rgba(245,158,11,.08)',borderRadius:4}}>💬 {goal.managerComment}</div>}
+      </div>
+      <div className="goal-right">
+        <div>
+          <div className="w-badge">
+             {editing ? <input className="editable-input" style={{width:60}} type="number" min="10" value={edits.weightage} onChange={e=>setEdits({...edits, weightage: Number(e.target.value)})} /> : <>{goal.weightage}<span style={{fontSize:14,fontWeight:400}}>%</span></>}
+          </div>
+          <div className="w-pct">weightage</div>
+        </div>
+        <span className={`tag ${STATUS_COLORS[goal.status]}`}>{goal.status}</span>
+        {goal.isLocked && <span className="tag locked">🔒 locked</span>}
+
+        {canEdit && !goal.isLocked && isEditable && !editing && (
+           <div style={{display:'flex', gap: 6, marginTop: 4, justifyContent: 'flex-end'}}>
+             <button className="btn btn-ghost" style={{padding:'4px 10px',fontSize:11}} onClick={()=>setEditing(true)}>Edit</button>
+             <button className="btn btn-danger" style={{padding:'4px 10px',fontSize:11}} onClick={()=>onDelete(goal._id)}>Delete</button>
+           </div>
+        )}
+        {editing && (
+           <div style={{display:'flex', gap: 6, marginTop: 4, justifyContent: 'flex-end'}}>
+             <button className="btn btn-success" style={{padding:'4px 10px',fontSize:11}} onClick={handleSave}>Save</button>
+             <button className="btn btn-ghost" style={{padding:'4px 10px',fontSize:11}} onClick={()=>{setEditing(false); setEdits({target: goal.target, weightage: goal.weightage});}}>Cancel</button>
+           </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── CreateGoalForm ────────────────────────────────────────
+function CreateGoalForm({ currentUser, onCreated, totalWeightage, goalCount }) {
+  const blank = { thrustArea:'Revenue', title:'', description:'', uom:'Numeric', target:'', weightage:'', direction:'min' };
+  const [form, setForm]       = useState(blank);
+  const [errors, setErrors]   = useState({});
+  const [serverErr, setServerErr] = useState('');
+  const [serverOk, setServerOk]   = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const remaining = 100 - totalWeightage;
+
+  const validate = () => {
+    const e = {};
+    if (!form.title.trim()) e.title = 'Title is required';
+    if (!form.target && form.target !== 0) e.target = 'Target is required';
+    const w = Number(form.weightage);
+    if (!w || w < 10) e.weightage = 'Minimum 10%';
+    if (w > remaining)  e.weightage = `Max you can add: ${remaining}%`;
+    if (goalCount >= 8) e.form = 'Maximum of 8 goals per employee';
+    return e;
+  };
+
+  const handleChange = (f, v) => {
+    setForm(p => ({...p, [f]: v}));
+    setErrors(p => ({...p, [f]: ''}));
+    setServerErr(''); setServerOk('');
+  };
+
+  const handleSubmit = async () => {
+    const e = validate();
+    if (Object.keys(e).length) { setErrors(e); return; }
+    setLoading(true);
+    try {
+      // POST /api/goals
+      await goalsApi.createGoal({
+        ...form,
+        target:    Number(form.target),
+        weightage: Number(form.weightage),
+        ownerId:   currentUser._id,
+      });
+      setServerOk('Goal created successfully!');
+      setForm(blank);
+      onCreated();
+    } catch (err) {
+      setServerErr(err.error || 'Failed to create goal');
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="form-panel">
+      <h2>Add New Goal</h2>
+      {serverErr && <div className="alert alert-err">{serverErr}</div>}
+      {serverOk  && <div className="alert alert-ok">{serverOk}</div>}
+      {goalCount >= 8 && <div className="alert alert-warn">You've reached the maximum of 8 goals.</div>}
+      <div className="form-grid">
+        <div className="form-group">
+          <label className="form-label">Thrust Area</label>
+          <select className="form-input" value={form.thrustArea} onChange={e=>handleChange('thrustArea',e.target.value)}>
+            {THRUST_AREAS.map(t=><option key={t}>{t}</option>)}
+          </select>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Unit of Measure (UoM)</label>
+          <select className="form-input" value={form.uom} onChange={e=>handleChange('uom',e.target.value)}>
+            {UOM_OPTIONS.map(u=><option key={u}>{u}</option>)}
+          </select>
+        </div>
+        <div className="form-group full">
+          <label className="form-label">Goal Title</label>
+          <input className="form-input" value={form.title} onChange={e=>handleChange('title',e.target.value)} placeholder="e.g. Increase ARR by 20%"/>
+          {errors.title && <span className="err">{errors.title}</span>}
+        </div>
+        <div className="form-group full">
+          <label className="form-label">Description <span style={{color:'var(--c-muted)'}}>(optional)</span></label>
+          <textarea className="form-input" rows={2} value={form.description} onChange={e=>handleChange('description',e.target.value)} placeholder="Brief context or measurement criteria" style={{resize:'vertical'}}/>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Target</label>
+          <input className="form-input" type="number" value={form.target} onChange={e=>handleChange('target',e.target.value)} placeholder={form.uom==='Percentage'?'e.g. 20':'e.g. 100'}/>
+          {errors.target && <span className="err">{errors.target}</span>}
+        </div>
+        <div className="form-group">
+          <label className="form-label">Weightage % <span style={{color:'var(--c-muted)'}}>(min 10, remaining {remaining}%)</span></label>
+          <input className="form-input" type="number" min={10} max={remaining} value={form.weightage} onChange={e=>handleChange('weightage',e.target.value)} placeholder={`10–${remaining}`}/>
+          {errors.weightage && <span className="err">{errors.weightage}</span>}
+        </div>
+        <div className="form-group">
+          <label className="form-label">Direction</label>
+          <select className="form-input" value={form.direction} onChange={e=>handleChange('direction',e.target.value)}>
+            <option value="min">Min → Higher achieved is better</option>
+            <option value="max">Max → Lower achieved is better (cost goals)</option>
+          </select>
+        </div>
+      </div>
+      <div className="actions">
+        <button className="btn btn-primary" onClick={handleSubmit} disabled={loading || goalCount >= 8}>
+          {loading ? 'Saving…' : '+ Add Goal'}
+        </button>
+        <button className="btn btn-ghost" onClick={()=>{setForm(blank);setErrors({});setServerErr('');setServerOk('');}}>Reset</button>
+      </div>
+    </div>
+  );
+}
+
+// ── Employee Page ─────────────────────────────────────────
+function EmployeePage({ currentUser }) {
+  const [data, setData]       = useState({ goals:[], totalWeightage:0 });
+  const [loading, setLoading] = useState(true);
+  const [msg, setMsg]         = useState('');
+  const [msgType, setMsgType] = useState('ok');
+  const [showForm, setShowForm] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const d = await goalsApi.getGoals(currentUser._id);
+      setData(d);
+    } catch (e) { notify(e.error || 'Failed to load goals', 'err'); } 
+    finally { setLoading(false); }
+  }, [currentUser._id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const notify = (m, t = 'ok') => {
+    setMsg(m); setMsgType(t);
+    setTimeout(() => setMsg(''), 3500);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this goal?')) return;
+    try {
+      await goalsApi.deleteGoal(id);
+      load(); notify('Goal deleted');
+    } catch (e) { notify(e.error || 'Delete failed', 'err'); }
+  };
+
+  const handleEdit = async (id, updates) => {
+    try {
+      await goalsApi.updateGoal(id, updates);
+      load(); notify('Goal updated successfully');
+    } catch (e) { notify(e.error || 'Update failed', 'err'); }
+  };
+
+  const handleSubmit = async () => {
+    try {
+      await goalsApi.submitGoals(currentUser._id);
+      load(); notify('Goal sheet submitted for manager approval!');
+    } catch (e) { notify(e.error || 'Submit failed', 'err'); }
+  };
+
+  const hasRevision = data.goals.some(g => g.status === 'revision');
+  const hasApproved = data.goals.some(g => g.status === 'approved');
+  const canSubmit   = data.goals.some(g => g.status === 'draft' || g.status === 'revision');
+
+  return (
+    <div className="content">
+      {msg && <div className={`alert alert-${msgType}`}>{msg}</div>}
+      {hasRevision && <div className="alert alert-warn">⚠ Your manager has requested revisions. Please review comments, edit your goals, and resubmit.</div>}
+      {hasApproved && <div className="alert alert-ok">✓ Your goal sheet has been approved and locked.</div>}
+
+      <WeightageRing total={data.totalWeightage} count={data.goals.length}/>
+
+      <div className="flex-between" style={{marginBottom:16}}>
+        <h2 style={{fontSize:14,fontWeight:500,color:'var(--c-muted)'}}>MY GOALS <span className="mono" style={{color:'var(--c-text)'}}>{data.goals.length}</span></h2>
+        <div style={{display:'flex',gap:8}}>
+          {canSubmit && data.totalWeightage === 100 &&
+            <button className="btn btn-success" onClick={handleSubmit}>Submit for Approval →</button>
+          }
+          <button className="btn btn-primary" onClick={()=>setShowForm(f=>!f)}>{showForm?'✕ Cancel':'+ New Goal'}</button>
+        </div>
+      </div>
+
+      {loading ? <div className="loading">Loading goals…</div> : data.goals.length === 0 ? (
+        <div className="empty"><div className="big">🎯</div><p>No goals yet.<br/>Click "+ New Goal" to get started.</p></div>
+      ) : (
+        <div className="goals-grid">
+          {data.goals.map(g => <GoalCard key={g._id} goal={g} onDelete={handleDelete} onEdit={handleEdit} canEdit={true}/>)}
+        </div>
+      )}
+
+      {showForm && (
+        <>
+          <hr className="divider"/>
+          <CreateGoalForm currentUser={currentUser} onCreated={()=>{load();setShowForm(false);}}
+            totalWeightage={data.totalWeightage} goalCount={data.goals.length}/>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Manager Employee Row ──────────────────────────────────
+function EmployeeBlock({ group, managerId, onRefresh, onNotify }) {
+  const [edits, setEdits]         = useState({});
+  const [rejComment, setRejComment] = useState('');
+  const [showRej, setShowRej]     = useState(false);
+
+  const startEdit  = (goal) => setEdits(p => ({...p, [goal._id]:{target:goal.target,weightage:goal.weightage}}));
+  const cancelEdit = (id)   => setEdits(p => { const n={...p}; delete n[id]; return n; });
+
+  const saveEdit = async (id) => {
+    try {
+      // PATCH /api/goals/manager/edit/:goalId
+      await goalsApi.managerEditGoal(id, edits[id]);
+      cancelEdit(id); onRefresh();
+    } catch (e) { onNotify(e.error || 'Edit failed', 'err'); }
+  };
+
+  const approve = async () => {
+    try {
+      // POST /api/goals/manager/approve/:ownerId
+      await goalsApi.approveGoals(group.employee._id, managerId);
+      onRefresh(); onNotify(`✓ Goals approved & locked for ${group.employee.name}`);
+    } catch (e) { onNotify(e.error || 'Approval failed', 'err'); }
+  };
+
+  const reject = async () => {
+    if (!rejComment.trim()) { onNotify('Please add a comment', 'err'); return; }
+    try {
+      // POST /api/goals/manager/reject/:ownerId
+      await goalsApi.rejectGoals(group.employee._id, rejComment);
+      setShowRej(false); setRejComment(''); onRefresh();
+      onNotify(`Sent back for revision to ${group.employee.name}`, 'warn');
+    } catch (e) { onNotify(e.error || 'Rejection failed', 'err'); }
+  };
+
+  const total   = group.goals.reduce((s,g) => s + (edits[g._id]?.weightage || g.weightage), 0);
+  const totalOk = Math.round(total) === 100;
+
+  return (
+    <div className="employee-block">
+      <div className="emp-header">
+        <div>
+          <div className="emp-name">{group.employee.name}</div>
+          <div className="emp-dept">{group.employee.department} · {group.employee.email}</div>
+        </div>
+        <div className="emp-actions">
+          <span className="pill mono" style={{
+            color:totalOk?'var(--c-success)':'var(--c-warn)',
+            background:totalOk?'rgba(34,211,165,.1)':'rgba(245,158,11,.1)',
+            border:`1px solid ${totalOk?'rgba(34,211,165,.3)':'rgba(245,158,11,.3)'}`,
+            padding:'3px 10px',borderRadius:20,fontSize:11
+          }}>{Math.round(total)}% total</span>
+          <button className="btn btn-danger" style={{padding:'6px 12px',fontSize:12}} onClick={()=>setShowRej(s=>!s)}>Revise</button>
+          <button className="btn btn-success" style={{padding:'6px 12px',fontSize:12}} onClick={approve} disabled={!totalOk}>Approve & Lock</button>
+        </div>
+      </div>
+
+      {showRej && (
+        <div style={{padding:'12px 20px',background:'rgba(244,63,94,.05)',borderBottom:'1px solid var(--c-border)',display:'flex',gap:10}}>
+          <input className="form-input" style={{flex:1,padding:'7px 12px',fontSize:12}} value={rejComment}
+            onChange={e=>setRejComment(e.target.value)} placeholder="Reason for revision request…"/>
+          <button className="btn btn-danger" style={{fontSize:12}} onClick={reject}>Send</button>
+          <button className="btn btn-ghost"  style={{fontSize:12}} onClick={()=>setShowRej(false)}>✕</button>
+        </div>
+      )}
+
+      <table>
+        <thead>
+          <tr><th>Thrust Area</th><th>Title</th><th>UoM</th><th>Target</th><th>Weightage</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          {group.goals.map(goal => {
+            const editing = !!edits[goal._id];
+            const e = edits[goal._id] || {};
+            return (
+              <tr key={goal._id}>
+                <td><span className="chip chip-thrust">{goal.thrustArea}</span></td>
+                <td>
+                  <div style={{fontSize:13,fontWeight:500}}>{goal.title}</div>
+                  {goal.description && <div style={{fontSize:11,color:'var(--c-muted)',marginTop:2}}>{goal.description}</div>}
+                </td>
+                <td><span className="chip chip-uom">{goal.uom}</span></td>
+                <td>
+                  {editing
+                    ? <input className="editable-input" type="number" value={e.target}
+                        onChange={ev=>setEdits(p=>({...p,[goal._id]:{...p[goal._id],target:Number(ev.target.value)}}))}/>
+                    : <span className="mono" style={{fontSize:13}}>{goal.target}{goal.uom==='Percentage'?'%':''}</span>
+                  }
+                </td>
+                <td>
+                  {editing
+                    ? <input className="editable-input" type="number" min={10} max={100} value={e.weightage}
+                        onChange={ev=>setEdits(p=>({...p,[goal._id]:{...p[goal._id],weightage:Number(ev.target.value)}}))}/>
+                    : <span className="mono" style={{fontSize:14,fontWeight:700,color:'var(--c-accent)'}}>{goal.weightage}%</span>
+                  }
+                </td>
+                <td>
+                  {editing
+                    ? <div style={{display:'flex',gap:6}}>
+                        <button className="btn btn-success" style={{padding:'4px 10px',fontSize:11}} onClick={()=>saveEdit(goal._id)}>Save</button>
+                        <button className="btn btn-ghost"   style={{padding:'4px 10px',fontSize:11}} onClick={()=>cancelEdit(goal._id)}>✕</button>
+                      </div>
+                    : <button className="btn btn-ghost" style={{padding:'4px 10px',fontSize:11}} onClick={()=>startEdit(goal)}>Edit</button>
+                  }
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ── Manager Page ──────────────────────────────────────────
+function ManagerPage({ currentUser }) {
+  const [groups, setGroups]   = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [msg, setMsg]         = useState('');
+  const [msgType, setMsgType] = useState('ok');
+  const [showPush, setShowPush] = useState(false);
+
+  // GET /api/goals/manager/:managerId/pending
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const d = await goalsApi.getManagerPending(currentUser._id);
+      setGroups(d);
+    } catch (e) {
+      notify(e.error || 'Failed to load pending reviews', 'err');
+    } finally { setLoading(false); }
+  }, [currentUser._id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const notify = (m, t = 'ok') => { setMsg(m); setMsgType(t); setTimeout(() => setMsg(''), 3500); };
+
+  return (
+    <div className="content">
+      {msg && <div className={`alert alert-${msgType}`}>{msg}</div>}
+      <div className="flex-between" style={{marginBottom:24}}>
+        <div>
+          <h2 style={{fontSize:16,fontWeight:500}}>Pending Approvals</h2>
+          <p style={{fontSize:12,color:'var(--c-muted)',marginTop:4}}>Review and approve your team's goal sheets</p>
+        </div>
+        <button className="btn btn-primary" onClick={()=>setShowPush(true)}>↑ Push KPI</button>
+      </div>
+
+      {loading ? <div className="loading">Loading submissions…</div>
+        : groups.length === 0
+          ? <div className="empty"><div className="big">✅</div><p>No pending approvals.<br/>All goal sheets are reviewed.</p></div>
+          : groups.map(g => <EmployeeBlock key={g.employee._id} group={g} managerId={currentUser._id} onRefresh={load} onNotify={notify}/>)
+      }
+
+      {showPush && <PushKpiModal currentUser={currentUser} onClose={()=>setShowPush(false)} onNotify={notify} onRefresh={load}/>}
+    </div>
+  );
+}
+
+// ── Push KPI Modal ────────────────────────────────────────
+function PushKpiModal({ currentUser, onClose, onNotify, onRefresh }) {
+  // Filter sidebar users: for a manager show their own subordinates;
+  // admin can push to anyone (non-admin).
+  const pushTargets = DEMO_USERS.filter(u =>
+    u.role === 'employee' &&
+    (currentUser.role === 'admin' || u.managerId === currentUser._id)
+  );
+
+  const [selected, setSelected] = useState([]);
+  const [kpi, setKpi]           = useState({ thrustArea:'Revenue', title:'', description:'', uom:'Numeric', target:'', weightage:'', direction:'min' });
+  const [errors, setErrors]     = useState({});
+  const [loading, setLoading]   = useState(false);
+
+  const toggle = (id) => setSelected(p => p.includes(id) ? p.filter(x=>x!==id) : [...p,id]);
+
+  const handleSubmit = async () => {
+    const e = {};
+    if (!kpi.title.trim()) e.title = 'Required';
+    if (!kpi.target)        e.target = 'Required';
+    if (!kpi.weightage || Number(kpi.weightage) < 10) e.weightage = 'Min 10%';
+    if (!selected.length)   e.users = 'Select at least one user';
+    if (Object.keys(e).length) { setErrors(e); return; }
+    setLoading(true);
+    try {
+      // POST /api/goals/push
+      const res = await goalsApi.pushKpi(
+        currentUser._id,
+        selected,
+        { ...kpi, target: Number(kpi.target), weightage: Number(kpi.weightage) }
+      );
+      onNotify(res.message + (res.failed?.length ? ` (${res.failed.length} failed)` : ''));
+      onRefresh(); onClose();
+    } catch (err) { onNotify(err.error || 'Push failed', 'err'); }
+    finally { setLoading(false); }
+  };
+
+  return (
+    <div className="modal-bg" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div className="modal">
+        <h3>Push Shared KPI</h3>
+        <div className="form-group" style={{marginBottom:16}}>
+          <label className="form-label">Thrust Area</label>
+          <select className="form-input" value={kpi.thrustArea} onChange={e=>setKpi(p=>({...p,thrustArea:e.target.value}))}>
+            {THRUST_AREAS.map(t=><option key={t}>{t}</option>)}
+          </select>
+        </div>
+        <div className="form-group" style={{marginBottom:16}}>
+          <label className="form-label">Title</label>
+          <input className="form-input" value={kpi.title} onChange={e=>setKpi(p=>({...p,title:e.target.value}))} placeholder="Shared KPI title"/>
+          {errors.title && <span className="err">{errors.title}</span>}
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12,marginBottom:16}}>
+          <div className="form-group">
+            <label className="form-label">UoM</label>
+            <select className="form-input" value={kpi.uom} onChange={e=>setKpi(p=>({...p,uom:e.target.value}))}>
+              {UOM_OPTIONS.map(u=><option key={u}>{u}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="form-label">Target</label>
+            <input className="form-input" type="number" value={kpi.target} onChange={e=>setKpi(p=>({...p,target:e.target.value}))} placeholder="e.g. 20"/>
+            {errors.target && <span className="err">{errors.target}</span>}
+          </div>
+          <div className="form-group">
+            <label className="form-label">Weightage %</label>
+            <input className="form-input" type="number" value={kpi.weightage} onChange={e=>setKpi(p=>({...p,weightage:e.target.value}))} placeholder="e.g. 20"/>
+            {errors.weightage && <span className="err">{errors.weightage}</span>}
+          </div>
+        </div>
+        <div className="form-group" style={{marginBottom:16}}>
+          <label className="form-label">Push To</label>
+          {errors.users && <span className="err" style={{marginBottom:4,display:'block'}}>{errors.users}</span>}
+          <div style={{background:'var(--c-surface2)',borderRadius:8,border:'1px solid var(--c-border)',padding:'4px 12px',maxHeight:180,overflowY:'auto'}}>
+            {pushTargets.map(u => (
+              <label key={u._id} className="user-checkbox">
+                <input type="checkbox" checked={selected.includes(u._id)} onChange={()=>toggle(u._id)}/>
+                <span>{u.name}</span>
+                <span style={{color:'var(--c-muted)',fontSize:11,marginLeft:'auto'}}>{u.department}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+        <div style={{display:'flex',gap:10,justifyContent:'flex-end'}}>
+          <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn btn-primary" onClick={handleSubmit} disabled={loading}>{loading?'Pushing…':'Push KPI →'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Score Badge helper ────────────────────────────────────
+function ScoreBadge({ label, percent }) {
+  const cls =
+    label === 'Target Met ✓' ? 'score-on-track' :
+    label === 'On Track'     ? 'score-on-track' :
+    label === 'At Risk'      ? 'score-at-risk'  :
+    label === 'Off Track'    ? 'score-off-track': 'score-not-started';
+  return <span className={`score-badge ${cls}`}>{label} · {percent}%</span>;
+}
+
+// ── Checkin Card ──────────────────────────────────────────
+function CheckinCard({ item, currentUser, onUpdated, managerMode }) {
+  const { goal } = item;
+  const [progress, setProgress] = useState(item.progress);
+  const [achieved, setAchieved] = useState('');
+  const [note, setNote]         = useState('');
+  const [comment, setComment]   = useState('');
+  const [showHistory, setShowHistory] = useState(false);
+  const [loading, setLoading]   = useState(false);
+  const [msg, setMsg]           = useState('');
+
+  const thrustColor = {Revenue:'#6c63ff',Cost:'#22d3a5',Quality:'#f59e0b',People:'#ff6584',Customer:'#38bdf8',Innovation:'#a78bfa',Compliance:'#fb923c',Other:'#94a3b8'}[goal.thrustArea] || '#6c63ff';
+  const barColor = progress.percent>=100?'#22d3a5':progress.percent>=75?'#6c63ff':progress.percent>=50?'#f59e0b':'#f43f5e';
+
+  const logCheckin = async () => {
+    if (achieved === '' || isNaN(Number(achieved))) { setMsg('Enter a valid achievement value'); return; }
+    setLoading(true);
+    try {
+      // POST /api/checkins/:goalId
+      const res = await checkinApi.logCheckin(goal._id, Number(achieved), note, currentUser._id, currentUser.role);
+      setProgress(res.progress);
+      setAchieved(''); setNote('');
+      setMsg('✓ Check-in saved');
+      onUpdated();
+    } catch (e) { setMsg(e.error || 'Error saving check-in'); }
+    finally { setLoading(false); setTimeout(() => setMsg(''), 3000); }
+  };
+
+  const addComment = async () => {
+    if (!comment.trim()) { setMsg('Enter a comment'); return; }
+    setLoading(true);
+    try {
+      // PATCH /api/checkins/:goalId/comment
+      await checkinApi.addComment(goal._id, comment, currentUser._id);
+      setComment(''); setMsg('✓ Comment saved'); onUpdated();
+    } catch (e) { setMsg(e.error || 'Error saving comment'); }
+    finally { setLoading(false); setTimeout(() => setMsg(''), 3000); }
+  };
+
+  return (
+    <div className="checkin-card">
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:6}}>
+        <div>
+          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+            <span style={{width:8,height:8,borderRadius:'50%',background:thrustColor,display:'inline-block'}}/>
+            <span className="goal-title" style={{fontSize:14,fontWeight:500}}>{goal.title}</span>
+          </div>
+          <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+            <span className="chip chip-thrust">{goal.thrustArea}</span>
+            <span className="chip chip-uom">{goal.uom}</span>
+            <span style={{fontSize:11,color:'var(--c-muted)'}}>Target: <strong style={{color:'var(--c-text)'}}>{goal.target}{goal.uom==='Percentage'?'%':''}</strong></span>
+            <span style={{fontSize:11,color:'var(--c-muted)'}}>Achieved: <strong style={{color:'var(--c-text)'}}>{goal.achieved!==null&&goal.achieved!==undefined?`${goal.achieved}${goal.uom==='Percentage'?'%':''}` : '—'}</strong></span>
+          </div>
+        </div>
+        <ScoreBadge label={progress.label} percent={progress.percent}/>
+      </div>
+
+      <div className="progress-bar-wrap">
+        <div className="progress-bar" style={{width:`${Math.min(progress.percent,100)}%`,background:barColor}}/>
+      </div>
+
+      {goal.managerComment && (
+        <div style={{fontSize:11,color:'var(--c-warn)',padding:'5px 10px',background:'rgba(245,158,11,.08)',borderRadius:4,marginBottom:8}}>
+          💬 Manager: {goal.managerComment}
+        </div>
+      )}
+
+      {msg && <div className={`alert ${msg.startsWith('✓')?'alert-ok':'alert-err'}`} style={{padding:'6px 10px',fontSize:11,marginBottom:8}}>{msg}</div>}
+
+      {!managerMode && (
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr auto',gap:8,marginTop:8}}>
+          <input className="form-input" type="number" min="0"
+            placeholder={`Actual ${goal.uom==='Percentage'?'%':goal.uom==='Zero-based'?'(0 = done)':'value'}`}
+            value={achieved} onChange={e=>setAchieved(e.target.value)} style={{padding:'7px 12px',fontSize:12}}/>
+          <input className="form-input" placeholder="Note (optional)" value={note} onChange={e=>setNote(e.target.value)} style={{padding:'7px 12px',fontSize:12}}/>
+          <button className="btn btn-primary" style={{padding:'7px 14px',fontSize:12}} onClick={logCheckin} disabled={loading}>{loading?'…':'Log'}</button>
+        </div>
+      )}
+
+      {managerMode && (
+        <div style={{display:'grid',gridTemplateColumns:'1fr auto',gap:8,marginTop:8}}>
+          <input className="form-input" placeholder="Add check-in comment…" value={comment} onChange={e=>setComment(e.target.value)} style={{padding:'7px 12px',fontSize:12}}/>
+          <button className="btn btn-warn" style={{padding:'7px 14px',fontSize:12}} onClick={addComment} disabled={loading}>{loading?'…':'Comment'}</button>
+        </div>
+      )}
+
+      {goal.checkins?.length > 0 && (
+        <div>
+          <button className="btn btn-ghost" style={{padding:'4px 10px',fontSize:11,marginTop:8}} onClick={()=>setShowHistory(h=>!h)}>
+            {showHistory?'▲ Hide':'▼ History'} ({goal.checkins.length})
+          </button>
+          {showHistory && (
+            <div className="checkin-history">
+              {[...goal.checkins].reverse().map((c,i) => (
+                <div key={i} className="checkin-history-item">
+                  <span className="mono" style={{color:'var(--c-accent)'}}>{c.quarter}</span>
+                  <span>Achievement: <strong>{c.achieved}</strong></span>
+                  <span style={{flex:1,padding:'0 12px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{c.note}</span>
+                  <span>{new Date(c.loggedAt).toLocaleDateString('en-IN',{day:'2-digit',month:'short'})}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Checkin Page ──────────────────────────────────────────
+function CheckinPage({ currentUser, managerMode, targetUser }) {
+  const uid = targetUser?._id || currentUser._id;
+  const [data, setData]       = useState({ goals:[], overallPercent:0 });
+  const [loading, setLoading] = useState(true);
+  const [quarter, setQuarter] = useState(currentQuarter());
+
+  const year = new Date().getFullYear();
+  const quarters = [`Q1-${year}`,`Q2-${year}`,`Q3-${year}`,`Q4-${year}`];
+
+  // GET /api/checkins/progress/:ownerId
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const d = await checkinApi.getProgress(uid);
+      // Backend returns { goals: [{goal, progress}], overallPercent }
+      setData(d);
+    } catch (e) {
+      console.error('Progress load failed:', e);
+    } finally { setLoading(false); }
+  }, [uid]);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) return <div className="loading">Loading progress…</div>;
+
+  const approvedGoals = data.goals || [];
+  const overallPct    = data.overallPercent ?? 0;
+  const overallColor  = overallPct>=100?'var(--c-success)':overallPct>=75?'var(--c-accent)':overallPct>=50?'var(--c-warn)':'var(--c-danger)';
+
+  return (
+    <div className="content">
+      <div style={{marginBottom:24}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',flexWrap:'wrap',gap:12}}>
+          <div>
+            <h2 style={{fontSize:16,fontWeight:500,marginBottom:4}}>{managerMode?`${targetUser?.name}'s Check-ins`:'Quarterly Check-ins'}</h2>
+            <p style={{fontSize:12,color:'var(--c-muted)'}}>Log actual achievements and track progress against targets</p>
+          </div>
+          <div style={{background:'var(--c-surface)',border:'1px solid var(--c-border)',borderRadius:10,padding:'12px 20px',textAlign:'center',minWidth:120}}>
+            <div style={{fontSize:26,fontWeight:700,fontFamily:'Space Mono',color:overallColor}}>{overallPct}%</div>
+            <div style={{fontSize:10,color:'var(--c-muted)',textTransform:'uppercase',letterSpacing:.5}}>Weighted Score</div>
+          </div>
+        </div>
+        <div className="quarter-tabs" style={{marginTop:16}}>
+          {quarters.map(q => (
+            <button key={q} className={`q-tab ${quarter===q?'active':''}`} onClick={()=>setQuarter(q)}>{q}</button>
+          ))}
+        </div>
+      </div>
+
+      {approvedGoals.length === 0 ? (
+        <div className="empty"><div className="big">📊</div><p>No approved goals yet.<br/>Goals must be approved before logging check-ins.</p></div>
+      ) : (
+        approvedGoals.map(item => (
+          <CheckinCard key={item.goal._id} item={item} currentUser={currentUser} onUpdated={load} managerMode={managerMode}/>
+        ))
+      )}
+    </div>
+  );
+}
+
+// ── Admin Page ────────────────────────────────────────────
+function AdminPage({ currentUser }) {
+  const [overview,    setOverview]    = useState(null);
+  const [completion,  setCompletion]  = useState([]);
+  const [audit,       setAudit]       = useState([]);
+  const [auditGoalId, setAuditGoalId] = useState('');  // user can type a goalId to audit
+  const [activeTab,   setActiveTab]   = useState('overview');
+  const [loading,     setLoading]     = useState(true);
+  const [exporting,   setExporting]   = useState(false);
+
+  const THRUST_COLORS = {Revenue:'#6c63ff',Cost:'#22d3a5',Quality:'#f59e0b',People:'#ff6584',Customer:'#38bdf8',Innovation:'#a78bfa',Compliance:'#fb923c',Other:'#94a3b8'};
+
+  // Load overview + completion on mount
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        // GET /api/admin/overview  and  GET /api/admin/completion  (parallel)
+        const [ov, comp] = await Promise.all([
+          adminApi.getOverview(),
+          adminApi.getCompletion(),
+        ]);
+        setOverview(ov);
+        setCompletion(comp);
+      } catch (e) { console.error('Admin load error:', e); }
+      finally { setLoading(false); }
+    })();
+  }, []);
+
+  // Load audit when auditGoalId changes (and it's non-empty)
+  const loadAudit = async (goalId) => {
+    if (!goalId?.trim()) return;
+    try {
+      // GET /api/admin/audit/:goalId
+      const logs = await adminApi.getAudit(goalId.trim());
+      setAudit(logs);
+    } catch (e) { console.error('Audit load error:', e); }
+  };
+
+  // CSV Export — hits GET /api/admin/export/csv directly (streams download)
+  const handleExport = () => {
+    setExporting(true);
+    // adminApi.exportCsv() opens the endpoint in a new tab which triggers
+    // the browser's native file download. No client-side blob building needed.
+    adminApi.exportCsv();
+    setTimeout(() => setExporting(false), 1500);
+  };
+
+  if (loading) return <div className="loading">Loading admin data…</div>;
+
+  const tabs = [
+    { id:'overview',   label:'Overview' },
+    { id:'completion', label:'Completion Rates' },
+    { id:'audit',      label:'Audit Trail' },
+  ];
+
+  return (
+    <div className="content">
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:24,flexWrap:'wrap',gap:12}}>
+        <div>
+          <h2 style={{fontSize:16,fontWeight:500,marginBottom:4}}>Admin Dashboard</h2>
+          <p style={{fontSize:12,color:'var(--c-muted)'}}>Organisation-wide goal & check-in governance</p>
+        </div>
+        {/* Export CSV → GET /api/admin/export/csv */}
+        <button className="export-btn" onClick={handleExport} disabled={exporting}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" width="14" height="14">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          {exporting ? 'Exporting…' : 'Export CSV'}
+        </button>
+      </div>
+
+      <div style={{display:'flex',gap:6,marginBottom:24}}>
+        {tabs.map(t => (
+          <button key={t.id} className={`q-tab ${activeTab===t.id?'active':''}`} onClick={()=>setActiveTab(t.id)}>{t.label}</button>
+        ))}
+      </div>
+
+      {/* ── Overview Tab ──────────────────────────────────── */}
+      {activeTab === 'overview' && overview && (
+        <>
+          <div className="stat-grid">
+            {[
+              { val:overview.totalEmployees,  label:'Total Employees' },
+              { val:overview.totalGoals,       label:'Total Goals' },
+              { val:overview.approvedGoals,    label:'Approved Goals' },
+              { val:overview.pendingApproval,  label:'Pending Approval' },
+              { val:overview.checkInsComplete, label:'Check-ins Done' },
+              { val:`${overview.checkInRate}%`,label:'Check-in Rate' },
+            ].map((s,i) => (
+              <div key={i} className="stat-box">
+                <div className="stat-val">{s.val}</div>
+                <div className="stat-label">{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <h3 style={{fontSize:13,fontWeight:500,color:'var(--c-muted)',textTransform:'uppercase',letterSpacing:.5,marginBottom:12}}>Goals by Thrust Area</h3>
+          <div style={{background:'var(--c-surface)',border:'1px solid var(--c-border)',borderRadius:10,padding:'20px 24px'}}>
+            {Object.entries(overview.thrustBreakdown || {}).sort((a,b)=>b[1]-a[1]).map(([area, count]) => {
+              const max = Math.max(...Object.values(overview.thrustBreakdown));
+              const pct = Math.round(count / max * 100);
+              return (
+                <div key={area} style={{display:'grid',gridTemplateColumns:'120px 1fr 30px',alignItems:'center',gap:12,marginBottom:10}}>
+                  <span style={{fontSize:12,display:'flex',alignItems:'center'}}>
+                    <span className="thrust-dot" style={{background:THRUST_COLORS[area]||'#94a3b8'}}/>
+                    {area}
+                  </span>
+                  <div style={{height:6,background:'var(--c-surface2)',borderRadius:3,overflow:'hidden'}}>
+                    <div style={{height:'100%',width:`${pct}%`,background:THRUST_COLORS[area]||'#6c63ff',borderRadius:3,transition:'width .5s'}}/>
+                  </div>
+                  <span className="mono" style={{fontSize:11,color:'var(--c-muted)',textAlign:'right'}}>{count}</span>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* ── Completion Tab ─────────────────────────────────── */}
+      {activeTab === 'completion' && (
+        <>
+          {completion.map((row, i) => {
+            const pct = row.completionRate;
+            const barCol = pct>=80?'var(--c-success)':pct>=50?'var(--c-accent)':'var(--c-warn)';
+            return (
+              <div key={i} className="mgr-row">
+                <div className="mgr-row-header">
+                  <div>
+                    <div className="mgr-name">{row.manager.name}</div>
+                    <div style={{fontSize:11,color:'var(--c-muted)',fontFamily:'Space Mono',marginTop:2}}>
+                      {row.manager.department} · {row.subordinateCount} direct reports
+                    </div>
+                  </div>
+                  <div style={{display:'flex',alignItems:'center',gap:12}}>
+                    <div className="completion-bar-wrap" style={{width:120}}>
+                      <div className="completion-bar" style={{width:`${pct}%`,background:barCol}}/>
+                    </div>
+                    <span className="mono" style={{fontSize:13,fontWeight:700,color:barCol,minWidth:40}}>{pct}%</span>
+                  </div>
+                </div>
+                <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                  {row.employeeBreakdown.map((e, j) => (
+                    <span key={j} style={{
+                      fontSize:11,padding:'3px 10px',borderRadius:20,fontFamily:'Space Mono',
+                      background:e.complete?'rgba(34,211,165,.1)':e.total===0?'var(--c-surface2)':'rgba(245,158,11,.1)',
+                      color:e.complete?'var(--c-success)':e.total===0?'var(--c-muted)':'var(--c-warn)',
+                      border:`1px solid ${e.complete?'rgba(34,211,165,.3)':e.total===0?'var(--c-border)':'rgba(245,158,11,.3)'}`
+                    }}>
+                      {e.emp.name.split(' ')[0]} {e.done}/{e.total}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </>
+      )}
+
+      {/* ── Audit Trail Tab ────────────────────────────────── */}
+      {activeTab === 'audit' && (
+        <>
+          <div style={{display:'flex',gap:10,marginBottom:16,alignItems:'center'}}>
+            <input
+              className="form-input"
+              style={{maxWidth:320,padding:'8px 12px',fontSize:12}}
+              value={auditGoalId}
+              onChange={e => setAuditGoalId(e.target.value)}
+              placeholder="Enter Goal _id to inspect audit trail…"
+            />
+            <button className="btn btn-primary" style={{padding:'8px 16px',fontSize:12}}
+              onClick={() => loadAudit(auditGoalId)}>
+              Load Audit
+            </button>
+          </div>
+
+          {audit.length === 0 ? (
+            <div className="empty" style={{padding:'30px 20px'}}>
+              <p>Enter a Goal ID above and click "Load Audit" to see the full change trail.</p>
+            </div>
+          ) : (
+            <div style={{background:'var(--c-surface)',border:'1px solid var(--c-border)',borderRadius:10,overflow:'hidden'}}>
+              <table className="audit-table">
+                <thead>
+                  <tr><th>When</th><th>Who</th><th>Action</th><th>Field</th><th>Old → New</th><th>Note</th><th>Post-Lock?</th></tr>
+                </thead>
+                <tbody>
+                  {audit.map((log, i) => (
+                    <tr key={i}>
+                      <td className="mono" style={{fontSize:10,color:'var(--c-muted)'}}>
+                        {new Date(log.createdAt).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'2-digit'})}
+                      </td>
+                      <td>
+                        <span style={{fontSize:12}}>{log.changedBy?.name}</span><br/>
+                        <span style={{fontSize:10,color:'var(--c-muted)'}}>{log.changedBy?.role}</span>
+                      </td>
+                      <td>
+                        <span className={`chip ${log.action==='checkin'?'chip-thrust':log.action==='comment'?'chip-uom':''}`} style={{textTransform:'capitalize'}}>{log.action}</span>
+                      </td>
+                      <td className="mono" style={{fontSize:11,color:'var(--c-muted)'}}>{log.field||'—'}</td>
+                      <td className="mono" style={{fontSize:11}}>{log.oldValue!==null?String(log.oldValue):'—'} → {log.newValue!==null?String(log.newValue):'—'}</td>
+                      <td style={{fontSize:11,color:'var(--c-muted)',maxWidth:200,overflow:'hidden',textOverflow:'ellipsis'}}>{log.note||'—'}</td>
+                      <td>{log.postLock?<span style={{fontSize:10,color:'var(--c-warn)'}}>Yes</span>:<span style={{fontSize:10,color:'var(--c-muted)'}}>No</span>}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Nav Icons ─────────────────────────────────────────────
+const IconTarget = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>;
+const IconDash   = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>;
+const IconUser   = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+const IconSwitch = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M8 3L4 7l4 4M4 7h16M16 21l4-4-4-4M20 17H4"/></svg>;
+const IconChart  = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>;
+const IconAdmin  = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>;
+
+// ── App Root ──────────────────────────────────────────────
+function App() {
+  // Active user identity lives in state AND localStorage so it persists
+  // across hot-reloads during development.
+  const getInitialUser = () => {
+    try {
+      const stored = localStorage.getItem('atomquest_demo_user');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const found  = DEMO_USERS.find(u => u._id === parsed._id);
+        if (found) return found;
+      }
+    } catch (_) {}
+    return DEMO_USERS[0];
+  };
+
+  const [currentUser, setCurrentUser] = useState(getInitialUser);
+  const [view, setView]               = useState(() => {
+    const u = getInitialUser();
+    return u.role === 'employee' ? 'goals' : u.role === 'admin' ? 'admin' : 'manager';
+  });
+
+  const isManager = currentUser.role === 'manager' || currentUser.role === 'admin';
+  const isAdmin   = currentUser.role === 'admin';
+
+  // Switching demo users: persist to localStorage so refreshing the page
+  // keeps the same context, and triggers a full query refresh via `key` props.
+  const switchUser = (u) => {
+    setCurrentUser(u);
+    localStorage.setItem('atomquest_demo_user', JSON.stringify(u));
+    setView(u.role === 'employee' ? 'goals' : u.role === 'admin' ? 'admin' : 'manager');
+  };
+
+  const pageTitle = {
+    goals:   'My Goal Sheet',
+    manager: 'Manager Dashboard',
+    checkin: 'Quarterly Check-ins',
+    admin:   'Admin Dashboard',
+  }[view] || '';
+
+  return (
+    <div className="layout">
+      <aside className="sidebar">
+        <div className="sidebar-logo">
+          <div className="brand">AtomQuest</div>
+          <div className="sub">Goal Portal</div>
+        </div>
+
+        <nav className="nav">
+          <div className="nav-section">Workspace</div>
+          <button className={`nav-item ${view==='goals'?'active':''}`} onClick={()=>setView('goals')}>
+            <IconTarget/> My Goals
+          </button>
+          <button className={`nav-item ${view==='checkin'?'active':''}`} onClick={()=>setView('checkin')}>
+            <IconChart/> Check-ins
+          </button>
+          {isManager && (
+            <button className={`nav-item ${view==='manager'?'active':''}`} onClick={()=>setView('manager')}>
+              <IconDash/> Manager View
+            </button>
+          )}
+          {isAdmin && (
+            <button className={`nav-item ${view==='admin'?'active':''}`} onClick={()=>setView('admin')}>
+              <IconAdmin/> Admin
+            </button>
+          )}
+
+          <div className="nav-section" style={{marginTop:16}}>Demo Users</div>
+          {DEMO_USERS.map(u => (
+            <button key={u._id}
+              className={`nav-item ${currentUser._id===u._id?'active':''}`}
+              onClick={() => switchUser(u)}
+            >
+              <IconUser/>
+              <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{u.name.split(' ')[0]}</span>
+              <span style={{fontSize:10,color:'var(--c-muted)',marginLeft:'auto',textTransform:'uppercase',letterSpacing:.5}}>{u.role}</span>
+            </button>
+          ))}
+        </nav>
+      </aside>
+
+      <main className="main">
+        <div className="topbar">
+          <div>
+            <h1>{pageTitle}</h1>
+            <div className="meta">{currentUser.name} · {currentUser.role} · {currentUser.department}</div>
+          </div>
+          {isManager && (
+            <button className="btn btn-ghost" style={{fontSize:12}} onClick={()=>setView(v=>v==='goals'?'manager':'goals')}>
+              <IconSwitch/> Switch View
+            </button>
+          )}
+        </div>
+
+        {/*
+          key={currentUser._id} on every page forces a full unmount+remount
+          when the demo user switches, so all useEffect fetches re-fire with
+          the new userId and stale state from the previous user is never shown.
+        */}
+        {view==='goals'   && <EmployeePage key={currentUser._id} currentUser={currentUser}/>}
+        {view==='checkin' && <CheckinPage  key={currentUser._id} currentUser={currentUser} managerMode={false}/>}
+        {view==='manager' && <ManagerPage  key={currentUser._id} currentUser={currentUser}/>}
+        {view==='admin'   && <AdminPage    key={currentUser._id} currentUser={currentUser}/>}
+      </main>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
